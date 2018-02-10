@@ -1,0 +1,128 @@
+drop table studentinfo cascade constraints;
+drop trigger student_trigger;
+drop sequence stud_seq;
+drop view offered_courses cascade constraints;
+drop table coursesection cascade constraints;
+drop table course cascade constraints;
+drop table studentcourse cascade constraints;
+drop table myclientsession cascade constraints;
+drop table myclient cascade constraints;
+create table myclient (
+  clientid varchar2(8) primary key,
+  password varchar2(12),
+  clienttype varchar2(12)
+);
+
+create table studentinfo (
+  studentid number(10) not null,
+  first_name varchar2(15),
+  last_name varchar2(15) NOT NULL,
+  age int,
+  address varchar2(255),
+  student_type varchar2(15),
+  sstatus varchar(30),
+  clientid varchar2(8),
+  foreign key (clientid) references myclient
+);
+
+alter table studentinfo add(
+  constraint stud_pk primary key (studentid));
+
+create sequence stud_seq start with 600000;
+
+create table myclientsession (
+  sessionid varchar2(32) primary key,
+  clientid varchar2(8),
+  sessiondate date,
+  foreign key (clientid) references myclient
+);
+
+create table course(
+  coursenum number(4),
+  title varchar2(30),
+  credits number(2),
+  primary key (coursenum)
+);
+
+create table coursesection(
+  sectionid number(5) not null,
+  coursenum number(4),
+  semester varchar2(30),
+  seatstaken int, 
+  maxseats int,
+  primary key (sectionid),
+  foreign key (coursenum) references course
+);
+
+create table studentcourse(
+  grade number(3),
+  studentid number(10),
+  sectionid number(5),
+  foreign key (studentid) references studentinfo,
+  foreign key (sectionid) references coursesection
+);
+
+create or replace trigger student_trigger
+before insert on studentinfo
+  for each row 
+    begin 
+      select stud_seq.NEXTVAL into :new.studentid from dual;
+    end;
+/
+
+create view offered_courses as select * from course;
+
+insert into course values (2413, 'Programming I', 3);
+insert into course values (2414, 'Programming II', 3);
+insert into course values (2000, 'Calculus I', 3);
+insert into course values (2001, 'Calculus II', 3);
+insert into course values (2415, 'Databases', 3);
+insert into course values (2416, 'Programming Languages', 3);
+insert into course values (1013, 'Beginning Programming', 3);
+
+--Programming I
+insert into coursesection values(20000, 2413, 'Fall 2017', 10, 30);
+insert into coursesection values(20001, 2413, 'Fall 2017', 15, 30);
+
+--Programming II
+insert into coursesection values(10001, 2414, 'Fall 2017', 25, 30);
+insert into coursesection values(10002, 2414, 'Fall 2017', 30, 30);
+
+--Calculus I
+insert into coursesection values(30000, 2000, 'Fall 2017', 0, 30);
+
+--Calculus II
+insert into coursesection values(40001, 2001, 'Fall 2017', 20, 30);
+insert into coursesection values(40002, 2001, 'Fall 2017', 30, 30);
+insert into coursesection values(40003, 2001, 'Fall 2017', 6, 30);
+
+--databases
+insert into coursesection values(50000, 2415, 'Fall 2017', 10, 30);
+insert into coursesection values(50001, 2415, 'Fall 2017', 22, 30);
+
+--programming languages
+insert into coursesection values(60000, 2416, 'Fall 2017', 12, 30);
+
+--Beginning programming
+insert into coursesection values(70000, 1013, 'Fall 2017', 29, 30);
+
+insert into myclient values ('admin', 'a', 'admin');
+insert into myclient values ('student', 's', 'student');
+insert into myclient values ('sadmin', 'sa', 'sadmin');
+insert into studentinfo (first_name, last_name, age, address, student_type, sstatus, clientid)
+	    values ('Drew', 'Johnson', 24, '321 Main St.', 'Undergraduate', 'Good Standing', 'student');
+insert into studentcourse values(4, 600000, 70000);
+insert into studentcourse values(3, 600000, 30000);
+
+create or replace procedure changeStatus(gpa in number, student in number)
+as 
+begin
+    if gpa < 2.0 then
+        update studentinfo set sstatus = 'Probation' where studentid = student;
+    else
+        update studentinfo set sstatus = 'Good Standing' where studentid = student;
+    end if;
+end;
+/
+
+commit;
